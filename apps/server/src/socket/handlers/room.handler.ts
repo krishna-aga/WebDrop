@@ -40,7 +40,7 @@ export function handleRoomEvents(io: Server, socket: WebDropSocket) {
       socket.emit(SOCKET_EVENTS.ROOM_JOINED, { role: socket.data.role });
 
       // If both sender and receiver are present, notify sender to initiate WebRTC offer
-      if (room.senderSocketId && room.receiverSocketId) {
+      if (room && room.senderSocketId && room.receiverSocketId) {
         io.to(room.senderSocketId).emit(SOCKET_EVENTS.ROOM_JOINED, { role: "receiver" });
       }
     } catch (error) {

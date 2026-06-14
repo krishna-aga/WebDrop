@@ -31,14 +31,19 @@ export function Receiver() {
   const [chatInput, setChatInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Disconnect only on unmount
   useEffect(() => {
-    if (urlRoomId && !joined) {
-      joinRoom(urlRoomId);
-    }
     return () => {
       disconnect();
     };
-  }, [urlRoomId, joinRoom, joined, disconnect]);
+  }, [disconnect]);
+
+  // Join room when urlRoomId changes
+  useEffect(() => {
+    if (urlRoomId) {
+      joinRoom(urlRoomId);
+    }
+  }, [urlRoomId, joinRoom]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -91,7 +91,24 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
       get().socket?.disconnect();
     }
     
-    set({ roomId, status: "waiting" });
+    // Clean up previous references
+    get().peerConnection?.close();
+    get().dataChannel?.close();
+
+    const clientRole = get().role === "sender" ? "sender" : "receiver";
+    
+    set({ 
+      roomId, 
+      status: "waiting", 
+      role: clientRole,
+      peerConnection: null,
+      dataChannel: null,
+      chatMessages: [],
+      incomingFile: null,
+      transferredBytes: 0,
+      speed: 0,
+      eta: 0
+    });
 
     const socket = io(SERVER_URL);
     set({ socket });
@@ -100,7 +117,7 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
     let transferStartTime = 0;
 
     socket.on("connect", () => {
-      socket.emit("join-room", { roomId }, (res: any) => {
+      socket.emit("join-room", { roomId, role: clientRole }, (res: any) => {
         if (!res.success) {
           set({ status: "failed" });
           console.error(res.error);
