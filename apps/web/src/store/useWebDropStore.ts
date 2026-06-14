@@ -30,6 +30,7 @@ interface WebDropState {
   transferredBytes: number;
   speed: number;
   eta: number;
+  downloadUrl: string | null;
   
   // Actions
   setFile: (file: File | null) => void;
@@ -63,6 +64,7 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
   transferredBytes: 0,
   speed: 0,
   eta: 0,
+  downloadUrl: null,
 
   setFile: (file) => set({ file }),
 
@@ -94,6 +96,9 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
     // Clean up previous references
     get().peerConnection?.close();
     get().dataChannel?.close();
+    if (get().downloadUrl) {
+      URL.revokeObjectURL(get().downloadUrl!);
+    }
 
     const clientRole = get().role === "sender" ? "sender" : "receiver";
     
@@ -107,14 +112,42 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
       incomingFile: null,
       transferredBytes: 0,
       speed: 0,
-      eta: 0
+      eta: 0,
+      downloadUrl: null
     });
 
     const socket = io(SERVER_URL);
     set({ socket });
 
     let receivedChunks: ArrayBuffer[] = [];
-    let transferStartTime = 0;
+    let speedSamples: Array<{ bytes: number; timestamp: number }> = [];
+
+    const updateRollingSpeedAndEta = (transferred: number, total: number) => {
+      const now = Date.now();
+      speedSamples.push({ bytes: transferred, timestamp: now });
+
+      // Limit sample buffer to the last 20 entries
+      if (speedSamples.length > 20) {
+        speedSamples.shift();
+      }
+
+      if (speedSamples.length < 2) {
+        set({ speed: 0, eta: 0 });
+        return;
+      }
+
+      const oldest = speedSamples[0];
+      const newest = speedSamples[speedSamples.length - 1];
+
+      const timeDelta = (newest.timestamp - oldest.timestamp) / 1000; // seconds
+      const bytesDelta = newest.bytes - oldest.bytes;
+
+      const currentSpeed = timeDelta > 0 ? bytesDelta / timeDelta : 0;
+      const remainingBytes = total - transferred;
+      const currentEta = currentSpeed > 0 ? remainingBytes / currentSpeed : 0;
+
+      set({ speed: currentSpeed, eta: currentEta });
+    };
 
     socket.on("connect", () => {
       socket.emit("join-room", { roomId, role: clientRole }, (res: any) => {
@@ -145,9 +178,11 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
       };
 
       channel.onmessage = (event) => {
+        console.log("Data channel received message type:", typeof event.data, "binaryType:", channel.binaryType);
         if (typeof event.data === "string") {
           try {
             const data = JSON.parse(event.data);
+            console.log("Parsed control message:", data);
             if (data.type === "chat") {
               set((state) => ({
                 chatMessages: [
@@ -156,8 +191,9 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
                 ],
               }));
             } else if (data.type === "file-metadata") {
+              console.log("File metadata received. Resetting buffers for:", data.name, data.size);
               receivedChunks = [];
-              transferStartTime = Date.now();
+              speedSamples = []; // Reset rolling speed calculation
               set({
                 incomingFile: { name: data.name, size: data.size },
                 transferredBytes: 0,
@@ -167,35 +203,56 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
               });
             } else if (data.type === "transfer-complete") {
               const incoming = get().incomingFile;
+              console.log("Transfer complete received. Chunks count:", receivedChunks.length, "incoming file:", incoming);
               if (incoming && receivedChunks.length > 0) {
-                const blob = new Blob(receivedChunks);
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = incoming.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                try {
+                  const blob = new Blob(receivedChunks);
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = incoming.name;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  console.log("Download triggered successfully for:", incoming.name);
+                  set({ downloadUrl: url, status: "completed" });
+                } catch (blobErr) {
+                  console.error("Failed to construct Blob or trigger download:", blobErr);
+                  set({ status: "completed" });
+                }
+              } else {
+                console.warn("Could not download file: chunks empty or metadata missing.");
+                set({ status: "completed" });
               }
-              set({ status: "completed" });
             }
           } catch (err) {
             console.error("Failed to parse string message:", err);
           }
-        } else if (event.data instanceof ArrayBuffer) {
-          receivedChunks.push(event.data);
-          const currentTransferred = get().transferredBytes + event.data.byteLength;
-          set({ transferredBytes: currentTransferred });
-
-          const incoming = get().incomingFile;
-          if (incoming) {
-            const elapsed = (Date.now() - transferStartTime) / 1000;
-            const currentSpeed = elapsed > 0 ? currentTransferred / elapsed : 0;
-            const remainingBytes = incoming.size - currentTransferred;
-            const currentEta = currentSpeed > 0 ? remainingBytes / currentSpeed : 0;
-            set({ speed: currentSpeed, eta: currentEta });
+        } else {
+          // Robust binary chunk handling (supporting both ArrayBuffer and Blob)
+          let bufferPromise: Promise<ArrayBuffer>;
+          if (event.data instanceof ArrayBuffer) {
+            bufferPromise = Promise.resolve(event.data);
+          } else if (event.data instanceof Blob) {
+            console.log("Binary chunk is a Blob, extracting ArrayBuffer...");
+            bufferPromise = event.data.arrayBuffer();
+          } else {
+            console.warn("Received unexpected binary data type:", event.data);
+            return;
           }
+
+          bufferPromise.then((buffer) => {
+            receivedChunks.push(buffer);
+            const currentTransferred = get().transferredBytes + buffer.byteLength;
+            set({ transferredBytes: currentTransferred });
+
+            const incoming = get().incomingFile;
+            if (incoming) {
+              updateRollingSpeedAndEta(currentTransferred, incoming.size);
+            }
+          }).catch((err) => {
+            console.error("Failed to extract ArrayBuffer from binary data:", err);
+          });
         }
       };
     };
@@ -300,10 +357,13 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
   },
 
   disconnect: () => {
-    const { socket, peerConnection, dataChannel } = get();
+    const { socket, peerConnection, dataChannel, downloadUrl } = get();
     if (dataChannel) dataChannel.close();
     if (peerConnection) peerConnection.close();
     if (socket) socket.disconnect();
+    if (downloadUrl) {
+      URL.revokeObjectURL(downloadUrl);
+    }
     set({
       status: "waiting",
       role: null,
@@ -318,6 +378,7 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
       transferredBytes: 0,
       speed: 0,
       eta: 0,
+      downloadUrl: null,
     });
   },
 
@@ -357,7 +418,49 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
     const CHUNK_SIZE = 64 * 1024; // 64 KB
     let offset = 0;
     const reader = new FileReader();
-    const transferStartTime = Date.now();
+
+    // Reset speed samples inside this closure by referencing the parent's closed-over samples or resetting a local copy.
+    // We re-initialize the rolling speed calculation samples.
+    // We want to access the speedSamples defined in joinRoom, but sendFile is outside joinRoom.
+    // Wait, is speedSamples defined inside joinRoom? Yes!
+    // But sendFile is defined in the store. How does sendFile access speedSamples if it was defined in joinRoom?
+    // Oh! In my replacement content, speedSamples was defined inside joinRoom.
+    // If sendFile is called, it cannot directly access speedSamples of joinRoom!
+    // Let's check: was it accessing transferStartTime earlier?
+    // Earlier: `const transferStartTime = Date.now();` was created locally in sendFile!
+    // Ah! Yes, `transferStartTime` was local to `sendFile`.
+    // If we want `sendFile` to use a rolling window, we can define `speedSamples` inside `sendFile` as a local array!
+    // Let's see: `let speedSamples: Array<{ bytes: number; timestamp: number }> = [];` inside `sendFile` is perfect!
+    // This is because `sendFile` is called once per file transmission, so a local array in `sendFile` is closed over by `reader.onload` and is exactly what we need!
+    // This is super clean!
+    // Let's implement it like that.
+    const fileSpeedSamples: Array<{ bytes: number; timestamp: number }> = [];
+
+    const updateFileRollingSpeedAndEta = (transferred: number, total: number) => {
+      const now = Date.now();
+      fileSpeedSamples.push({ bytes: transferred, timestamp: now });
+
+      if (fileSpeedSamples.length > 20) {
+        fileSpeedSamples.shift();
+      }
+
+      if (fileSpeedSamples.length < 2) {
+        set({ speed: 0, eta: 0 });
+        return;
+      }
+
+      const oldest = fileSpeedSamples[0];
+      const newest = fileSpeedSamples[fileSpeedSamples.length - 1];
+
+      const timeDelta = (newest.timestamp - oldest.timestamp) / 1000;
+      const bytesDelta = newest.bytes - oldest.bytes;
+
+      const currentSpeed = timeDelta > 0 ? bytesDelta / timeDelta : 0;
+      const remainingBytes = total - transferred;
+      const currentEta = currentSpeed > 0 ? remainingBytes / currentSpeed : 0;
+
+      set({ speed: currentSpeed, eta: currentEta });
+    };
 
     const readNextChunk = () => {
       const currentChannel = get().dataChannel;
@@ -383,12 +486,7 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
       offset += buffer.byteLength;
       set({ transferredBytes: offset });
 
-      // Update speed & ETA
-      const elapsed = (Date.now() - transferStartTime) / 1000;
-      const currentSpeed = elapsed > 0 ? offset / elapsed : 0;
-      const remainingBytes = file.size - offset;
-      const currentEta = currentSpeed > 0 ? remainingBytes / currentSpeed : 0;
-      set({ speed: currentSpeed, eta: currentEta });
+      updateFileRollingSpeedAndEta(offset, file.size);
 
       if (offset < file.size) {
         // Handle backpressure

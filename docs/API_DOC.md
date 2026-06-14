@@ -85,3 +85,49 @@ Emitted by the server to the remaining peer in a room if the other peer disconne
 #### `error`
 Emitted by the server when a generic unhandled exception occurs.
 - **Payload:** `string` (Error message)
+
+---
+
+## WebRTC Data Channel Protocol
+
+The client browsers communicate directly peer-to-peer (P2P) over the `webdrop-data` WebRTC `RTCDataChannel`.
+
+### Data Types
+The data channel multiplexes both text signaling and binary data:
+1. **UTF-8 Text Messages (JSON strings):** Used for chat messages and file transfer controls.
+2. **Binary Data (ArrayBuffer):** Used for raw file chunks.
+
+### Message Formats (UTF-8 JSON Strings)
+
+#### 1. Chat Message
+Sent by either client to transmit a text chat message.
+- **Payload:**
+  ```json
+  {
+    "type": "chat",
+    "text": "Hello, world!"
+  }
+  ```
+
+#### 2. File Metadata
+Sent by the sender client before transferring file chunks to prepare the receiver.
+- **Payload:**
+  ```json
+  {
+    "type": "file-metadata",
+    "name": "example.png",
+    "size": 1048576
+  }
+  ```
+
+#### 3. Transfer Complete
+Sent by the sender client after the final file chunk has been successfully transmitted.
+- **Payload:**
+  ```json
+  {
+    "type": "transfer-complete"
+  }
+  ```
+
+### Binary Chunk Payloads
+File chunks are sent sequentially as raw `ArrayBuffer` payloads (default size is `64 KB` per chunk) right after the `file-metadata` message. Chunks are appended to the receiver's memory buffer until a `transfer-complete` control signal is received.

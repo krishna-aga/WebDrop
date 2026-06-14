@@ -24,7 +24,8 @@ export function Receiver() {
     eta,
     chatMessages,
     sendChatMessage,
-    dataChannel
+    dataChannel,
+    downloadUrl
   } = useWebDropStore();
   
   const joined = role === "receiver";
@@ -117,6 +118,16 @@ export function Receiver() {
                 )}
               </CardContent>
             </div>
+            
+            {joined && status === "completed" && downloadUrl && incomingFile && (
+              <div className="p-6 pt-0">
+                <a href={downloadUrl} download={incomingFile.name} className="w-full block">
+                  <Button className="w-full py-6 text-lg font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] duration-200">
+                    Save File
+                  </Button>
+                </a>
+              </div>
+            )}
           </Card>
 
           {isConnectedOrTransferring && (
