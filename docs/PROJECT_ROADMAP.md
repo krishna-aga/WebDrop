@@ -152,7 +152,7 @@ Two clients can discover each other.
 
 ---
 
-# Phase 4: WebRTC Connection
+# Phase 4: WebRTC Connection [COMPLETED]
 
 ### Goal
 
@@ -185,7 +185,7 @@ Working peer connection.
 
 ---
 
-# Phase 5: Data Channel
+# Phase 5: Data Channel [COMPLETED]
 
 ### Goal
 
@@ -220,7 +220,7 @@ Peer-to-peer messaging working.
 
 ---
 
-# Phase 6: File Transfer
+# Phase 6: File Transfer [COMPLETED]
 
 ### Goal
 
