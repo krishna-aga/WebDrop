@@ -4,25 +4,33 @@ import { rooms } from "../../utils/roomStore";
 import { SOCKET_EVENTS } from "../../constants/events";
 
 export function handleRoomEvents(io: Server, socket: WebDropSocket) {
-  socket.on(SOCKET_EVENTS.JOIN_ROOM, ({ roomId }, callback) => {
+  socket.on(SOCKET_EVENTS.JOIN_ROOM, ({ roomId, role }, callback) => {
     try {
+      const clientRole = role === "sender" ? "sender" : "receiver";
       let room = rooms[roomId];
 
       if (!room) {
-        // First person to join is the sender
         room = {
           id: roomId,
-          senderSocketId: socket.id,
+          senderSocketId: clientRole === "sender" ? socket.id : undefined,
+          receiverSocketId: clientRole === "receiver" ? socket.id : undefined,
         };
         rooms[roomId] = room;
-        socket.data.role = "sender";
+        socket.data.role = clientRole;
       } else {
-        if (room.receiverSocketId) {
-          return callback({ success: false, error: "Room is full" });
+        if (clientRole === "sender") {
+          if (room.senderSocketId) {
+            return callback({ success: false, error: "Sender already in room" });
+          }
+          room.senderSocketId = socket.id;
+          socket.data.role = "sender";
+        } else {
+          if (room.receiverSocketId) {
+            return callback({ success: false, error: "Receiver already in room" });
+          }
+          room.receiverSocketId = socket.id;
+          socket.data.role = "receiver";
         }
-        // Second person is the receiver
-        room.receiverSocketId = socket.id;
-        socket.data.role = "receiver";
       }
 
       socket.data.roomId = roomId;
@@ -31,8 +39,8 @@ export function handleRoomEvents(io: Server, socket: WebDropSocket) {
       callback({ success: true });
       socket.emit(SOCKET_EVENTS.ROOM_JOINED, { role: socket.data.role });
 
-      // If receiver just joined, notify sender
-      if (socket.data.role === "receiver") {
+      // If both sender and receiver are present, notify sender to initiate WebRTC offer
+      if (room && room.senderSocketId && room.receiverSocketId) {
         io.to(room.senderSocketId).emit(SOCKET_EVENTS.ROOM_JOINED, { role: "receiver" });
       }
     } catch (error) {

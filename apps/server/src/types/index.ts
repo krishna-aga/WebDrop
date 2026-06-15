@@ -10,7 +10,7 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-  "join-room": (payload: { roomId: string }, callback: (res: { success: boolean; error?: string }) => void) => void;
+  "join-room": (payload: { roomId: string; role?: "sender" | "receiver" }, callback: (res: { success: boolean; error?: string }) => void) => void;
   "offer": (payload: { roomId: string; offer: any }) => void;
   "answer": (payload: { roomId: string; answer: any }) => void;
   "ice-candidate": (payload: { roomId: string; candidate: any }) => void;

@@ -1,7 +1,7 @@
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Status = "waiting" | "connecting" | "connected" | "failed";
+type Status = "waiting" | "connecting" | "connected" | "failed" | "transferring" | "completed";
 
 interface ConnectionStatusProps {
   status: Status;
@@ -14,6 +14,8 @@ export function ConnectionStatus({ status, message }: ConnectionStatusProps) {
     connecting: { icon: Loader2, color: "text-blue-500", defaultMsg: "Connecting...", spin: true },
     connected: { icon: CheckCircle2, color: "text-green-500", defaultMsg: "Connected", spin: false },
     failed: { icon: XCircle, color: "text-destructive", defaultMsg: "Connection failed", spin: false },
+    transferring: { icon: Loader2, color: "text-blue-500", defaultMsg: "Transferring...", spin: true },
+    completed: { icon: CheckCircle2, color: "text-green-500", defaultMsg: "Transfer complete", spin: false },
   };
 
   const { icon: Icon, color, defaultMsg, spin } = config[status];

@@ -1,5 +1,5 @@
 export type Room = {
   id: string;
-  senderSocketId: string;
+  senderSocketId?: string;
   receiverSocketId?: string;
 };
