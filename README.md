@@ -49,16 +49,19 @@ To deploy the backend signaling server on Render:
 2. Set the following build settings:
    - **Build Command**: `npm install -g pnpm && pnpm install && pnpm --filter=server build`
    - **Start Command**: `node apps/server/dist/index.js`
-3. Under the **Environment** tab, add:
+3. Under the **Environment** tab, add the following environment variables:
    - `NODE_VERSION`: `20`
-   - `CLIENT_URL`: The URL of your deployed frontend (e.g. `https://webdrop.vercel.app`), or `*` to allow all origins during initial testing.
+   - `CLIENT_URL`: `https://web-drop-web-eight.vercel.app`
+   - `PORT`: `10000`
 
 ### Frontend (Vercel)
 To deploy the React + Vite frontend on Vercel:
 1. Create a new project on Vercel and link your repository.
 2. In the project settings, set the **Root Directory** to `apps/web`.
-3. Set the **Build Command** to `pnpm build`.
-4. Set the **Output Directory** to `dist`.
-5. Add the following **Environment Variable**:
-   - `VITE_SERVER_URL`: The URL of your deployed Render backend (e.g. `https://webdrop-backend.onrender.com`).
+3. Check the setting to include workspace source files outside the root directory.
+4. Set the **Build Command** to `pnpm build`.
+5. Set the **Output Directory** to `dist`.
+6. Add the following **Environment Variable**:
+   - `VITE_SERVER_URL`: `https://webdrop-7mhx.onrender.com`
+
 

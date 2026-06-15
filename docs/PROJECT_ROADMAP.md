@@ -357,18 +357,19 @@ Robust user experience.
 * **Root Directory**: `apps/web`
 * **Build Command**: `pnpm build`
 * **Output Directory**: `dist`
-* **Environment Variable**: `VITE_SERVER_URL=<render-backend-url>`
+* **Environment Variable**: `VITE_SERVER_URL=https://webdrop-7mhx.onrender.com`
 
 ### Backend (Render)
 * **Build Command**: `npm install -g pnpm && pnpm install && pnpm --filter=server build`
 * **Start Command**: `node apps/server/dist/index.js`
 * **Environment Variables**:
   * `NODE_VERSION`: `20`
-  * `CLIENT_URL`: `<vercel-frontend-url>`
+  * `CLIENT_URL`: `https://web-drop-web-eight.vercel.app`
   * `PORT`: `10000`
 
 ### Deliverables
-* Publicly accessible application with backend live on Render and frontend live on Vercel.
+* Publicly accessible application with backend live on Render (https://webdrop-7mhx.onrender.com) and frontend live on Vercel (https://web-drop-web-eight.vercel.app).
+
 
 ---
 
