@@ -131,3 +131,22 @@ Sent by the sender client after the final file chunk has been successfully trans
 
 ### Binary Chunk Payloads
 File chunks are sent sequentially as raw `ArrayBuffer` payloads (default size is `64 KB` per chunk) right after the `file-metadata` message. Chunks are appended to the receiver's memory buffer until a `transfer-complete` control signal is received.
+
+---
+
+## Production Deployment Configuration
+
+When deploying the signaling server to production (e.g. on Render):
+
+### 1. Base URL
+- **REST API URL:** `https://webdrop-7mhx.onrender.com/api`
+- **Socket.io WebSocket URL:** `https://webdrop-7mhx.onrender.com`
+
+### 2. Required Client Environment Variables
+For the React frontend to communicate with the production server, compile the client with:
+- `VITE_SERVER_URL=https://webdrop-7mhx.onrender.com`
+
+### 3. Server CORS Configuration
+Set the following environment variable on the server to restrict access to your trusted domain:
+- `CLIENT_URL=https://web-drop-web-eight.vercel.app`
+

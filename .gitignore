@@ -36,3 +36,10 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Project docs / Agent files
+PROJECT_ROADMAP.md
+AGENTS.md
+docs/PROJECT_ROADMAP.md
+docs/AGENTS.md
+
