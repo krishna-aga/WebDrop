@@ -351,32 +351,24 @@ Robust user experience.
 
 ---
 
-# Phase 10: Production Deployment
+# Phase 10: Production Deployment [COMPLETED]
 
-### Frontend
+### Frontend (Vercel)
+* **Root Directory**: `apps/web`
+* **Build Command**: `pnpm build`
+* **Output Directory**: `dist`
+* **Environment Variable**: `VITE_SERVER_URL=<render-backend-url>`
 
-Deploy on:
-
-* Vercel
-
-### Backend
-
-Deploy on:
-
-* Railway
-  or
-* Render
-
-### Environment Variables
-
-```env
-PORT=
-CLIENT_URL=
-```
+### Backend (Render)
+* **Build Command**: `npm install -g pnpm && pnpm install && pnpm --filter=server build`
+* **Start Command**: `node apps/server/dist/index.js`
+* **Environment Variables**:
+  * `NODE_VERSION`: `20`
+  * `CLIENT_URL`: `<vercel-frontend-url>`
+  * `PORT`: `10000`
 
 ### Deliverables
-
-Publicly accessible application.
+* Publicly accessible application with backend live on Render and frontend live on Vercel.
 
 ---
 
