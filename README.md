@@ -1,5 +1,7 @@
 # WebDrop (P2P Web Share)
 
+[![Presentation Slide Deck](https://img.shields.io/badge/Presentation-Slide%20Deck-orange?style=flat-square&logo=google-slides)](https://docs.google.com/presentation/d/1BHHDwUyW6zNMTaphX5NLQiifysZY_CBzqFFXsJbubvo/edit?usp=sharing) — [View Presentation Slides](https://docs.google.com/presentation/d/1BHHDwUyW6zNMTaphX5NLQiifysZY_CBzqFFXsJbubvo/edit?usp=sharing)
+
 WebDrop is a fast, secure, peer-to-peer file sharing application built to transfer files directly between browsers using WebRTC. 
 No servers are involved in the actual file transfer, meaning no file size limits and completely private sharing.
 
