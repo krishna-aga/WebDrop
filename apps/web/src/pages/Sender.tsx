@@ -88,7 +88,18 @@ export function Sender() {
                       
                       {(status === "connecting" || status === "transferring" || status === "connected" || status === "completed") && (
                         <div className="space-y-4">
-                          <ProgressBar progress={progress} />
+                          <ProgressBar 
+                            progress={progress} 
+                            label={
+                              status === "completed" 
+                                ? "Transfer complete" 
+                                : status === "transferring" 
+                                ? "Transferring..." 
+                                : status === "connecting" 
+                                ? "Connecting..." 
+                                : "Ready"
+                            } 
+                          />
                           <TransferStats speed={speed} eta={eta} transferred={transferredBytes} total={file.size} />
                         </div>
                       )}

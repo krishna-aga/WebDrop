@@ -208,20 +208,14 @@ export const useWebDropStore = create<WebDropState>((set, get) => ({
                 try {
                   const blob = new Blob(receivedChunks);
                   const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = incoming.name;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                  console.log("Download triggered successfully for:", incoming.name);
+                  console.log("Blob URL generated successfully:", url);
                   set({ downloadUrl: url, status: "completed" });
                 } catch (blobErr) {
-                  console.error("Failed to construct Blob or trigger download:", blobErr);
+                  console.error("Failed to construct Blob:", blobErr);
                   set({ status: "completed" });
                 }
               } else {
-                console.warn("Could not download file: chunks empty or metadata missing.");
+                console.warn("Could not save file: chunks empty or metadata missing.");
                 set({ status: "completed" });
               }
             }
