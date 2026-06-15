@@ -13,6 +13,12 @@ This project is organized as a Turborepo monorepo:
 - `packages/types`: Shared TypeScript definitions.
 - `packages/utils`: Shared utility functions.
 
+
+## Live Deployments
+
+- **Frontend Application (Vercel):** [https://web-drop-web-eight.vercel.app](https://web-drop-web-eight.vercel.app)
+- **Backend Signaling Server (Render):** [https://webdrop-7mhx.onrender.com](https://webdrop-7mhx.onrender.com) (Health Check: [https://webdrop-7mhx.onrender.com/health](https://webdrop-7mhx.onrender.com/health))
+
 ## Getting Started
 
 ### Prerequisites
